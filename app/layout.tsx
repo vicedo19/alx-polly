@@ -3,6 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./lib/context/auth-context";
 
+// Import environment validation middleware to run at startup
+import "./lib/middleware/env-middleware";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

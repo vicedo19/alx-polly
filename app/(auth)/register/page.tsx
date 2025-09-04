@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { register } from '@/app/lib/actions/auth-actions';
+import { validatePasswordStrength } from '@/app/lib/utils/password-validation';
 
 export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +25,14 @@ export default function RegisterPage() {
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+    
+    // Validate password strength
+    const passwordValidation = validatePasswordStrength(password);
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.error || 'Password does not meet security requirements');
       setLoading(false);
       return;
     }
@@ -77,6 +86,9 @@ export default function RegisterPage() {
                 required
                 autoComplete="new-password"
               />
+              <p className="text-xs text-gray-500">
+                Password must be at least 8 characters long and include uppercase, lowercase, number, and special character.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm Password</Label>

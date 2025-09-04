@@ -17,14 +17,12 @@ export interface PollOption {
 
 export interface Poll {
   id: string;
-  title: string;
+  question: string;
   description?: string;
   options: PollOption[];
-  createdBy: string; // User ID
-  createdAt: Date;
-  updatedAt: Date;
-  endDate?: Date;
-  settings: PollSettings;
+  user_id: string; // User ID
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface PollSettings {

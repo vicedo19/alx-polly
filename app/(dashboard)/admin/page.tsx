@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { deletePoll } from "@/app/lib/actions/poll-actions";
 import { createClient } from "@/lib/supabase/client";
+import { getCurrentUserWithRole } from "@/app/lib/actions/auth-actions";
 
 interface Poll {
   id: string;
@@ -24,10 +26,24 @@ export default function AdminPage() {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    fetchAllPolls();
-  }, []);
+    // Check if user is admin
+    async function checkAdminAccess() {
+      const user = await getCurrentUserWithRole();
+      if (!user || user.role !== 'admin') {
+        setIsAuthorized(false);
+        router.push('/unauthorized');
+      } else {
+        setIsAuthorized(true);
+        fetchAllPolls();
+      }
+    }
+    
+    checkAdminAccess();
+  }, [router]);
 
   const fetchAllPolls = async () => {
     const supabase = createClient();
@@ -83,9 +99,9 @@ export default function AdminPage() {
                         </code>
                       </div>
                       <div>
-                        Owner ID:{" "}
+                        Owner:{" "}
                         <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
-                          {poll.user_id}
+                          {poll.user_id.substring(0, 8)}***
                         </code>
                       </div>
                       <div>

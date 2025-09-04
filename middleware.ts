@@ -1,7 +1,14 @@
 import { type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
+import { checkAdminAccess } from '@/lib/supabase/admin-middleware'
 
 export async function middleware(request: NextRequest) {
+  // Check if the request is for an admin route
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    return await checkAdminAccess(request);
+  }
+  
+  // For all other routes, use the standard session update
   return await updateSession(request)
 }
 

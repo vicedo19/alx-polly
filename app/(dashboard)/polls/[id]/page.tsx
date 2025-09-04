@@ -1,52 +1,21 @@
-'use client';
+import { getPollById } from '@/app/lib/actions/poll-actions';
+import { notFound } from 'next/navigation';
+import PollDetail from './PollDetail';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+export const dynamic = 'force-dynamic';
 
-// Mock data for a single poll
-const mockPoll = {
-  id: '1',
-  title: 'Favorite Programming Language',
-  description: 'What programming language do you prefer to use?',
-  options: [
-    { id: '1', text: 'JavaScript', votes: 15 },
-    { id: '2', text: 'Python', votes: 12 },
-    { id: '3', text: 'Java', votes: 8 },
-    { id: '4', text: 'C#', votes: 5 },
-    { id: '5', text: 'Go', votes: 2 },
-  ],
-  totalVotes: 42,
-  createdAt: '2023-10-15',
-  createdBy: 'John Doe',
-};
+// No mock data needed anymore
 
-export default function PollDetailPage({ params }: { params: { id: string } }) {
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const [hasVoted, setHasVoted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export default async function PollDetailPage({ params }: { params: { id: string } }) {
+  // Fetch the poll data from the server
+  const { poll, error } = await getPollById(params.id);
 
-  // In a real app, you would fetch the poll data based on the ID
-  const poll = mockPoll;
-  const totalVotes = poll.options.reduce((sum, option) => sum + option.votes, 0);
+  if (error || !poll) {
+    notFound();
+  }
 
-  const handleVote = () => {
-    if (!selectedOption) return;
-    
-    setIsSubmitting(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setHasVoted(true);
-      setIsSubmitting(false);
-    }, 1000);
-  };
-
-  const getPercentage = (votes: number) => {
-    if (totalVotes === 0) return 0;
-    return Math.round((votes / totalVotes) * 100);
-  };
+  return <PollDetail poll={poll} pollId={params.id} />;
+}
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
