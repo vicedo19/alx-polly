@@ -1,77 +1,37 @@
-# ALX Polly: A Polling Application
+# ALX Polly - Interactive Polling Application
 
-Welcome to ALX Polly, a full-stack polling application built with Next.js, TypeScript, and Supabase. This project serves as a practical learning ground for modern web development concepts, with a special focus on identifying and fixing common security vulnerabilities.
+A modern, secure polling application built with Next.js 15 that allows users to create polls, share them via unique links and QR codes, and collect votes in real-time.
 
-## About the Application
+## 🚀 Project Overview
 
-ALX Polly allows authenticated users to create, share, and vote on polls. It's a simple yet powerful application that demonstrates key features of modern web development:
+ALX Polly is a full-stack web application that enables users to:
+- Create and manage interactive polls with multiple options
+- Share polls via unique URLs and QR codes
+- Vote on polls with duplicate prevention
+- View real-time voting results
+- Manage polls through a user-friendly dashboard
+- Admin panel for poll oversight and user management
 
--   **Authentication**: Secure user sign-up and login.
--   **Poll Management**: Users can create, view, and delete their own polls.
--   **Voting System**: A straightforward system for casting and viewing votes.
--   **User Dashboard**: A personalized space for users to manage their polls.
+## 🛠️ Technology Stack
 
-The application is built with a modern tech stack:
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript
+- **Database & Authentication**: Supabase
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **State Management**: Server Components with React Server Actions
+- **QR Code Generation**: qrcode.react
+- **Security**: DOMPurify for XSS prevention
+- **Deployment**: Vercel (recommended)
 
--   **Framework**: [Next.js](https://nextjs.org/) (App Router)
--   **Language**: [TypeScript](https://www.typescriptlang.org/)
--   **Backend & Database**: [Supabase](https://supabase.io/)
--   **UI**: [Tailwind CSS](https://tailwindcss.com/) with [shadcn/ui](https://ui.shadcn.com/)
--   **State Management**: React Server Components and Client Components
+## 📋 Prerequisites
 
----
+- Node.js 18+ and npm/yarn
+- Supabase account
+- Git
 
-## 🚀 The Challenge: Security Audit & Remediation
+## ⚙️ Setup Instructions
 
-As a developer, writing functional code is only half the battle. Ensuring that the code is secure, robust, and free of vulnerabilities is just as critical. This version of ALX Polly has been intentionally built with several security flaws, providing a real-world scenario for you to practice your security auditing skills.
-
-**Your mission is to act as a security engineer tasked with auditing this codebase.**
-
-### Your Objectives:
-
-1.  **Identify Vulnerabilities**:
-    -   Thoroughly review the codebase to find security weaknesses.
-    -   Pay close attention to user authentication, data access, and business logic.
-    -   Think about how a malicious actor could misuse the application's features.
-
-2.  **Understand the Impact**:
-    -   For each vulnerability you find, determine the potential impact.Query your AI assistant about it. What data could be exposed? What unauthorized actions could be performed?
-
-3.  **Propose and Implement Fixes**:
-    -   Once a vulnerability is identified, ask your AI assistant to fix it.
-    -   Write secure, efficient, and clean code to patch the security holes.
-    -   Ensure that your fixes do not break existing functionality for legitimate users.
-
-### Where to Start?
-
-A good security audit involves both static code analysis and dynamic testing. Here’s a suggested approach:
-
-1.  **Familiarize Yourself with the Code**:
-    -   Start with `app/lib/actions/` to understand how the application interacts with the database.
-    -   Explore the page routes in the `app/(dashboard)/` directory. How is data displayed and managed?
-    -   Look for hidden or undocumented features. Are there any pages not linked in the main UI?
-
-2.  **Use Your AI Assistant**:
-    -   This is an open-book test. You are encouraged to use AI tools to help you.
-    -   Ask your AI assistant to review snippets of code for security issues.
-    -   Describe a feature's behavior to your AI and ask it to identify potential attack vectors.
-    -   When you find a vulnerability, ask your AI for the best way to patch it.
-
----
-
-## Getting Started
-
-To begin your security audit, you'll need to get the application running on your local machine.
-
-### 1. Prerequisites
-
--   [Node.js](https://nodejs.org/) (v20.x or higher recommended)
--   [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
--   A [Supabase](https://supabase.io/) account (the project is pre-configured, but you may need your own for a clean slate).
-
-### 2. Installation
-
-Clone the repository and install the dependencies:
+### 1. Clone the Repository
 
 ```bash
 git clone <repository-url>
@@ -79,18 +39,257 @@ cd alx-polly
 npm install
 ```
 
-### 3. Environment Variables
+### 2. Supabase Configuration
 
-The project uses Supabase for its backend. An environment file `.env.local` is needed.Use the keys you created during the Supabase setup process.
+#### Create a Supabase Project
+1. Go to [Supabase](https://supabase.com) and create a new project
+2. Wait for the project to be fully initialized
+3. Go to Settings > API to get your project credentials
 
-### 4. Running the Development Server
+#### Database Schema Setup
+Run the following SQL in your Supabase SQL Editor:
 
-Start the application in development mode:
+```sql
+-- Create polls table
+CREATE TABLE polls (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  question TEXT NOT NULL,
+  options JSONB NOT NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-```bash
-npm run dev
+-- Create votes table
+CREATE TABLE votes (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  poll_id UUID REFERENCES polls(id) ON DELETE CASCADE,
+  option_id TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, poll_id)
+);
+
+-- Create user_roles table
+CREATE TABLE user_roles (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+  role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'user')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE polls ENABLE ROW LEVEL SECURITY;
+ALTER TABLE votes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies
+CREATE POLICY "Users can view all polls" ON polls FOR SELECT USING (true);
+CREATE POLICY "Users can create their own polls" ON polls FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own polls" ON polls FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own polls" ON polls FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can view all votes" ON votes FOR SELECT USING (true);
+CREATE POLICY "Users can create votes" ON votes FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can view all user roles" ON user_roles FOR SELECT USING (true);
+CREATE POLICY "Only admins can manage user roles" ON user_roles FOR ALL USING (
+  EXISTS (
+    SELECT 1 FROM user_roles ur 
+    WHERE ur.user_id = auth.uid() AND ur.role = 'admin'
+  )
+);
 ```
 
-The application will be available at `http://localhost:3000`.
+### 3. Environment Variables
 
-Good luck, engineer! This is your chance to step into the shoes of a security professional and make a real impact on the quality and safety of this application. Happy hunting!
+Create a `.env.local` file in the root directory:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+# App Configuration
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+**Where to find these values:**
+- `NEXT_PUBLIC_SUPABASE_URL`: Supabase Dashboard > Settings > API > Project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Supabase Dashboard > Settings > API > Project API keys > anon public
+- `SUPABASE_SERVICE_ROLE_KEY`: Supabase Dashboard > Settings > API > Project API keys > service_role (keep secret!)
+
+### 4. Run the Application
+
+```bash
+# Development mode
+npm run dev
+
+# Production build
+npm run build
+npm start
+```
+
+The application will be available at `http://localhost:3000`
+
+## 📖 Usage Examples
+
+### Creating a Poll
+
+1. **Register/Login**: Create an account or sign in
+2. **Navigate to Create**: Click "Create Poll" in the dashboard
+3. **Fill Poll Details**:
+   ```
+   Question: "What's your favorite programming language?"
+   Options: 
+   - JavaScript
+   - Python
+   - TypeScript
+   - Go
+   ```
+4. **Submit**: Click "Create Poll" to generate your poll
+5. **Share**: Use the generated URL or QR code to share
+
+### Voting on a Poll
+
+1. **Access Poll**: Click on a poll link or scan QR code
+2. **Select Option**: Choose your preferred option
+3. **Submit Vote**: Click "Vote" (one vote per user per poll)
+4. **View Results**: See real-time voting results
+
+### Managing Polls
+
+- **View All Polls**: Dashboard shows all your created polls
+- **Edit Poll**: Click "Edit" to modify question/options
+- **Delete Poll**: Click "Delete" to remove a poll
+- **View Analytics**: See vote counts and percentages
+
+## 🧪 Testing
+
+### Run Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+### Manual Testing Checklist
+
+- [ ] User registration and login
+- [ ] Poll creation with validation
+- [ ] Poll editing and deletion
+- [ ] Voting functionality
+- [ ] Duplicate vote prevention
+- [ ] QR code generation
+- [ ] Admin panel access (if admin role)
+- [ ] Responsive design on mobile/desktop
+
+## 🔧 Development
+
+### Project Structure
+
+```
+alx-polly/
+├── app/                    # Next.js App Router
+│   ├── (dashboard)/       # Dashboard routes
+│   ├── lib/               # Utilities and actions
+│   │   ├── actions/       # Server Actions
+│   │   ├── utils/         # Utility functions
+│   │   └── supabase/      # Supabase clients
+│   └── globals.css        # Global styles
+├── components/            # Reusable components
+│   └── ui/               # shadcn/ui components
+├── lib/                  # Additional utilities
+└── public/               # Static assets
+```
+
+### Key Features
+
+- **Server Components**: Data fetching happens on the server
+- **Server Actions**: Form submissions use Next.js Server Actions
+- **Type Safety**: Full TypeScript coverage
+- **Security**: Input validation, XSS prevention, RLS policies
+- **Real-time**: Automatic data revalidation
+
+### Code Style
+
+- Use Server Components by default
+- Client Components only when interactivity is needed
+- Server Actions for all mutations
+- Comprehensive error handling
+- Input validation and sanitization
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+1. Push code to GitHub/GitLab
+2. Connect repository to Vercel
+3. Add environment variables in Vercel dashboard
+4. Deploy automatically on push
+
+### Environment Variables for Production
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_production_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_production_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_production_service_role_key
+NEXT_PUBLIC_APP_URL=https://your-domain.com
+```
+
+## 🔒 Security Features
+
+- **Authentication**: Supabase Auth with email/password
+- **Authorization**: Row Level Security (RLS) policies
+- **Input Validation**: Server-side validation with DOMPurify
+- **XSS Prevention**: HTML sanitization
+- **CSRF Protection**: Built-in Next.js protection
+- **Environment Variables**: Secure credential management
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Troubleshooting
+
+### Common Issues
+
+**Build Errors**
+- Ensure all environment variables are set
+- Check Supabase connection
+- Verify Node.js version (18+)
+
+**Authentication Issues**
+- Verify Supabase project URL and keys
+- Check RLS policies are enabled
+- Ensure user_roles table exists
+
+**Database Errors**
+- Run the SQL schema setup
+- Check table permissions
+- Verify RLS policies
+
+### Getting Help
+
+- Check the [Issues](../../issues) page
+- Review Supabase documentation
+- Check Next.js 15 documentation
+
+---
+
+**Built with ❤️ using Next.js 15 and Supabase**

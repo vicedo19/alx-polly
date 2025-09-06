@@ -35,11 +35,11 @@ export function validateEnvVariables(): void {
 export function getEnvVariable(key: string, defaultValue?: string): string {
   const value = process.env[key];
   
-  if (!value) {
+  if (!value || value === 'your_supabase_url' || value === 'your_supabase_anon_key' || value === 'your_supabase_service_role_key') {
     if (defaultValue !== undefined) {
       return defaultValue;
     }
-    throw new Error(`Environment variable ${key} is not set`);
+    throw new Error(`Environment variable ${key} is not set or contains placeholder value`);
   }
   
   return value;

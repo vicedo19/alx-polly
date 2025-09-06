@@ -17,17 +17,23 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const formData = new FormData(event.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+    try {
+      const formData = new FormData(event.currentTarget);
+      const email = formData.get('email') as string;
+      const password = formData.get('password') as string;
 
-    const result = await login({ email, password });
+      const result = await login({ email, password });
 
-    if (result?.error) {
-      setError(result.error);
+      if (result?.error) {
+        setError(result.error);
+        setLoading(false);
+      } else {
+        window.location.href = '/polls'; // Full reload to pick up session
+      }
+    } catch (e) {
+      // Handle any exceptions that might occur due to invalid environment variables
+      setError('Authentication service unavailable. Please check your Supabase configuration.');
       setLoading(false);
-    } else {
-      window.location.href = '/polls'; // Full reload to pick up session
     }
   };
 

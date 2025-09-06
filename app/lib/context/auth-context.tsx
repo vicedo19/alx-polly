@@ -25,17 +25,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let mounted = true;
     const getUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) {
-        // Handle error silently in production
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Error fetching user:', error);
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) {
+          // Handle error silently in production
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error fetching user:', error);
+          }
         }
-      }
-      if (mounted) {
-        setUser(data.user ?? null);
-        setSession(null);
-        setLoading(false);
+        if (mounted) {
+          setUser(data?.user ?? null);
+          setSession(null);
+          setLoading(false);
+        }
+      } catch (e) {
+        // Handle any exceptions that might occur due to invalid credentials
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Exception in auth context:', e);
+        }
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 

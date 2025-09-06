@@ -3,8 +3,9 @@ import { notFound, redirect } from 'next/navigation';
 // Import the client component
 import EditPollForm from './EditPollForm';
 
-export default async function EditPollPage({ params }: { params: { id: string } }) {
-  const { poll, error, isOwner } = await getPollById(params.id);
+export default async function EditPollPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { poll, error, isOwner } = await getPollById(id);
 
   if (error || !poll) {
     notFound();
@@ -12,7 +13,7 @@ export default async function EditPollPage({ params }: { params: { id: string } 
   
   // If user is not the owner, redirect to the poll view page
   if (isOwner === false) {
-    redirect(`/polls/${params.id}`);
+    redirect(`/polls/${id}`);
   }
 
   return (

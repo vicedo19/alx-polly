@@ -1,6 +1,10 @@
 import { type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 import { checkAdminAccess } from '@/lib/supabase/admin-middleware'
+import { validateEnvVariables } from '@/lib/utils/env-validation';
+
+// Run validation on startup
+validateEnvVariables();
 
 export async function middleware(request: NextRequest) {
   // Check if the request is for an admin route
